@@ -101,3 +101,87 @@ export function createOrder(userId : string, stockSymbol : string, quantity : nu
     OrderBook[stockSymbol][stockType][price].orders.push(order);
 }
 
+
+export function transaction(userId : string, sellerId : string, sellerType : "buy" | "sell", quantity : number, price : number, stockType : stockType, stockSymbol : string, altType : stockType) {
+      
+    OrderBook[stockSymbol][stockType][price].total -= quantity;
+    OrderBook[stockSymbol][stockType][price].orders[0].quantity -= quantity;
+
+
+    if(sellerType === "buy"){
+          // diff btw === and == is that === checks for type as well and == checks for value only
+
+
+         // seller case : 
+        const lockedMoney = (1000 - price) * quantity;
+        inr_balance[sellerId].locked -= lockedMoney;
+
+        if(! stock_balance[sellerId]){
+            stock_balance[sellerId] = {};
+        }
+        if(! stock_balance[sellerId][stockSymbol]){
+            stock_balance[sellerId][stockSymbol] = {
+                "yes" : {
+                    quantity : 0,
+                    locked : 0,
+                },
+                "no" : {
+                    quantity : 0,
+                    locked : 0,
+                }
+            }
+        }
+        stock_balance[sellerId][stockSymbol][altType].quantity += quantity;
+
+
+        // buyer case :
+        if(! stock_balance[userId]){
+            stock_balance[userId] = {};
+        }
+
+        if(! stock_balance[userId][stockSymbol]){
+            stock_balance[userId][stockSymbol] = {
+                "yes" : {
+                    quantity : 0,
+                    locked : 0,
+                },
+                "no" : {
+                    quantity : 0,
+                    locked : 0,
+                }
+            }
+        }
+
+        stock_balance[userId][stockSymbol][stockType].quantity += quantity;
+        inr_balance[userId].balance -= price * quantity;
+
+    }
+    else{
+         
+        // seller case :
+      //  sell yes -> someone who is selling no -> if no one is there -> we place a bid for sell no for alt price
+        
+
+        stock_balance[sellerId][stockSymbol][stockType].locked -= quantity;
+        
+        if(! stock_balance[sellerId][stockSymbol]){
+            stock_balance[sellerId][stockSymbol] = {
+                "yes" : {
+                    quantity : 0,
+                    locked : 0,
+                },
+                "no" : {
+                    quantity : 0,
+                    locked : 0,
+                }
+            }
+        }
+        inr_balance[sellerId].balance += price * quantity;
+
+
+        //buyer case :
+        stock_balance[userId][stockSymbol][altType].locked += quantity;
+        inr_balance[userId].balance -= price * quantity;
+
+    }
+}
